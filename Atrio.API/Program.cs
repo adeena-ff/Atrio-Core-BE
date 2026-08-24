@@ -1,6 +1,7 @@
-using Atrio.API.Data;
-using Atrio.API.Services;
-using Microsoft.EntityFrameworkCore;
+using Atrio.Application;
+using Atrio.Application.Common;
+using Atrio.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +20,8 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
@@ -31,11 +32,6 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
-
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IStudentService, StudentService>();
-builder.Services.AddScoped<IClassService, ClassService>();
-builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
 var app = builder.Build();
 
@@ -49,6 +45,23 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = "swagger";
     });
 }
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (AppValidationException exception)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = exception.Message
+        });
+    }
+});
 
 app.UseHttpsRedirection();
 app.UseCors(AllowFrontend);
