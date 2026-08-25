@@ -1,10 +1,15 @@
 # Atrio Core Backend
 
-ASP.NET Core Web API for the Atrio Student Attendance Management System (Zynthra Technologies).
+Clean Architecture ASP.NET Core API for Atrio (Zynthra Technologies).
 
-## Stack
+## Projects
 
-.NET 10 Web API, Entity Framework Core, PostgreSQL (Npgsql).
+| Project | Layer |
+| --- | --- |
+| `Atrio.Domain` | Entities, enums, domain calculation |
+| `Atrio.Application` | DTOs, service contracts, services, validation |
+| `Atrio.Infrastructure` | EF Core `ApplicationDbContext`, Fluent API, PostgreSQL |
+| `Atrio.API` | Controllers, CORS, Swagger, composition root |
 
 ## Setup
 
@@ -13,10 +18,9 @@ ASP.NET Core Web API for the Atrio Student Attendance Management System (Zynthra
 
 ```bash
 dotnet tool restore
-cd Atrio.API
-dotnet ef migrations add InitialCreate
-dotnet ef database update
-dotnet run
+dotnet ef migrations add InitialCreate --project Atrio.Infrastructure --startup-project Atrio.API
+dotnet ef database update --project Atrio.Infrastructure --startup-project Atrio.API
+dotnet run --project Atrio.API
 ```
 
 Swagger UI: `http://localhost:5289/swagger`
