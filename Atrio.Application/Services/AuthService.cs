@@ -3,6 +3,8 @@ using Atrio.Application.Common;
 using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Atrio.Application.Mapping;
+using Atrio.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Atrio.Application.Services;
@@ -25,9 +27,14 @@ public class AuthService(IApplicationDbContext dbContext) : IAuthService
             throw AppValidationException.Single(nameof(request.Email), "Invalid credentials.");
         }
 
+        var verification = new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        if (verification == PasswordVerificationResult.Failed)
+        {
+            throw AppValidationException.Single(nameof(request.Email), "Invalid credentials.");
+        }
+
         return new LoginResponseDto
         {
-            Token = $"atrio-dev-{user.Id}",
             User = user.ToDto()
         };
     }
