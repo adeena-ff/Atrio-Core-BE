@@ -16,3 +16,11 @@ public class LoginResponseDto
     public string Token { get; set; } = string.Empty;
     public UserDto User { get; set; } = new();
 }
+
+public class DashboardDto
+{
+    public int TotalStudents { get; set; }
+    public int ActiveClasses { get; set; }
+    public decimal TodayAttendancePercentage { get; set; }
+    public int LowAttendanceAlerts { get; set; }
+}
