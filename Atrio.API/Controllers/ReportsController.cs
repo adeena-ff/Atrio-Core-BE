@@ -6,6 +6,7 @@ namespace Atrio.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/attendance/reports")]
 public class ReportsController(IReportService reportService) : ControllerBase
 {
     [HttpGet("monthly")]
