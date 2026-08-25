@@ -8,7 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+var dotEnvPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (!File.Exists(dotEnvPath)) dotEnvPath = Path.Combine(Directory.GetCurrentDirectory(), "Atrio.API", ".env");
+DotEnv.Load(dotEnvPath);
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 const string AllowFrontend = "AllowFrontend";
 
