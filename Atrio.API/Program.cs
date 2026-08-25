@@ -1,9 +1,18 @@
 using Atrio.Application;
 using Atrio.Application.Common;
+using Atrio.API.Services;
 using Atrio.Infrastructure;
+using Atrio.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
+var dotEnvPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (!File.Exists(dotEnvPath)) dotEnvPath = Path.Combine(Directory.GetCurrentDirectory(), "Atrio.API", ".env");
+DotEnv.Load(dotEnvPath);
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 const string AllowFrontend = "AllowFrontend";
 
@@ -22,6 +31,17 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing.");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true, ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"], ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+});
 
 builder.Services.AddCors(options =>
 {
@@ -34,6 +54,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+await DbInitializer.InitializeAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
@@ -65,6 +87,7 @@ app.Use(async (context, next) =>
 
 app.UseHttpsRedirection();
 app.UseCors(AllowFrontend);
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
