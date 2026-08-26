@@ -35,6 +35,26 @@ public class UpsertAttendanceDto
     public Guid? RecordedByUserId { get; set; }
 }
 
+/// <summary>Batch request used by the roll-call workspace. A single-record payload remains supported for API compatibility.</summary>
+public class MarkAttendanceRequestDto
+{
+    public Guid ClassId { get; set; }
+    public DateOnly? Date { get; set; }
+    public DateOnly? AttendanceDate { get; set; }
+    public IReadOnlyList<MarkAttendanceRecordDto> Records { get; set; } = [];
+
+    public Guid StudentId { get; set; }
+    public AttendanceStatus Status { get; set; } = AttendanceStatus.Present;
+    public string? Notes { get; set; }
+}
+
+public class MarkAttendanceRecordDto
+{
+    public Guid StudentId { get; set; }
+    public AttendanceStatus Status { get; set; } = AttendanceStatus.Present;
+    public string? Notes { get; set; }
+}
+
 public class AttendanceHistoryDto
 {
     public Guid StudentId { get; set; }

@@ -5,10 +5,11 @@ using Atrio.Application.Interfaces;
 using Atrio.Application.Mapping;
 using Atrio.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Atrio.Application.Services;
 
-public class AttendanceService(IApplicationDbContext dbContext) : IAttendanceService
+public class AttendanceService(IApplicationDbContext dbContext, ILogger<AttendanceService> logger) : IAttendanceService
 {
     public async Task<IReadOnlyList<AttendanceRecordDto>> GetAllAsync(Guid? teacherId = null, CancellationToken cancellationToken = default)
     {
@@ -65,8 +66,12 @@ public class AttendanceService(IApplicationDbContext dbContext) : IAttendanceSer
 
     public async Task<AttendanceRecordDto> UpsertAsync(UpsertAttendanceDto dto, CancellationToken cancellationToken = default)
     {
-        var student = await dbContext.Students.FirstOrDefaultAsync(s => s.Id == dto.StudentId, cancellationToken)
-            ?? throw AppValidationException.Single(nameof(dto.StudentId), "Student was not found.");
+        var student = await dbContext.Students.FirstOrDefaultAsync(s => s.Id == dto.StudentId, cancellationToken);
+        if (student is null)
+        {
+            logger.LogWarning("Attendance marking failed because StudentId {StudentId} was not found. ClassId: {ClassId}; Date: {AttendanceDate}.", dto.StudentId, dto.ClassId, dto.AttendanceDate);
+            throw AppValidationException.Single(nameof(dto.StudentId), $"Student '{dto.StudentId}' was not found.");
+        }
 
         if (student.ClassId != dto.ClassId)
         {
