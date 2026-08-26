@@ -11,7 +11,8 @@ public static class DtoMapper
         FullName = user.FullName,
         Email = user.Email,
         Role = user.Role,
-        IsActive = user.IsActive
+        IsActive = user.IsActive,
+        AssignedClassIds = user.AssignedClasses.Select(c => c.Id).ToList()
     };
 
     public static StudentDto ToDto(this Student student, decimal attendancePercentage = 0) => new()

@@ -96,12 +96,17 @@ namespace Atrio.Infrastructure.Persistence.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<Guid?>("TeacherId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
 
                     b.HasIndex("IsActive");
+
+                    b.HasIndex("TeacherId");
 
                     b.ToTable("Classes", (string)null);
                 });
@@ -236,6 +241,13 @@ namespace Atrio.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Atrio.Domain.Entities.Class", b =>
                 {
+                    b.HasOne("Atrio.Domain.Entities.User", "Teacher")
+                        .WithMany("AssignedClasses")
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Teacher");
+
                     b.Navigation("AttendanceRecords");
 
                     b.Navigation("Students");
@@ -248,6 +260,8 @@ namespace Atrio.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Atrio.Domain.Entities.User", b =>
                 {
+                    b.Navigation("AssignedClasses");
+
                     b.Navigation("RecordedAttendance");
                 });
 #pragma warning restore 612, 618

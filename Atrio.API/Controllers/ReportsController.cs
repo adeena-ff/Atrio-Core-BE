@@ -1,5 +1,6 @@
 using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Atrio.API.Controllers;
@@ -9,6 +10,7 @@ namespace Atrio.API.Controllers;
 [Route("api/attendance/reports")]
 public class ReportsController(IReportService reportService) : ControllerBase
 {
+    [Authorize(Roles = "Admin,Teacher")]
     [HttpGet("monthly")]
     public async Task<ActionResult<MonthlyReportDto>> Monthly(
         [FromQuery] int year,

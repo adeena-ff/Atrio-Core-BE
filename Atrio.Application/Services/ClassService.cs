@@ -10,13 +10,14 @@ namespace Atrio.Application.Services;
 
 public class ClassService(IApplicationDbContext dbContext) : IClassService
 {
-    public async Task<IReadOnlyList<ClassDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ClassDto>> GetAllAsync(Guid? teacherId = null, CancellationToken cancellationToken = default)
     {
-        var classes = await dbContext.Classes
+        var query = dbContext.Classes
             .AsNoTracking()
             .Include(c => c.Students)
-            .OrderBy(c => c.Name)
-            .ToListAsync(cancellationToken);
+            .AsQueryable();
+        if (teacherId.HasValue) query = query.Where(c => c.TeacherId == teacherId.Value);
+        var classes = await query.OrderBy(c => c.Name).ToListAsync(cancellationToken);
 
         return classes.Select(c => c.ToDto(c.Students.Count(s => s.IsActive))).ToList();
     }

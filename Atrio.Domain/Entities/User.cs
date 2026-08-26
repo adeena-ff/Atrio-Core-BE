@@ -24,4 +24,5 @@ public class User
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public ICollection<AttendanceRecord> RecordedAttendance { get; set; } = [];
+    public ICollection<Class> AssignedClasses { get; set; } = [];
 }

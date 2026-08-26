@@ -15,5 +15,7 @@ public class ClassConfiguration : IEntityTypeConfiguration<Class>
         builder.Property(classEntity => classEntity.Code).HasMaxLength(40).IsRequired();
         builder.Property(classEntity => classEntity.AcademicYear).HasMaxLength(20).IsRequired();
         builder.HasIndex(classEntity => classEntity.IsActive);
+        builder.HasIndex(classEntity => classEntity.TeacherId);
+        builder.HasOne(classEntity => classEntity.Teacher).WithMany(user => user.AssignedClasses).HasForeignKey(classEntity => classEntity.TeacherId).OnDelete(DeleteBehavior.SetNull);
     }
 }
