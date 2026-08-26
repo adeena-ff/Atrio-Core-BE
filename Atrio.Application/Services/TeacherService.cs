@@ -27,8 +27,15 @@ public class TeacherService(IApplicationDbContext dbContext) : ITeacherService
 
         if (query.ClassId.HasValue) teachersQuery = teachersQuery.Where(user => user.AssignedClasses.Any(c => c.Id == query.ClassId.Value));
 
-        var departmentCode = QueryFilter.DepartmentCode(query.Department);
-        if (departmentCode is not null) teachersQuery = teachersQuery.Where(user => user.AssignedClasses.Any(c => c.Code.StartsWith(departmentCode + "-")));
+        if (!string.IsNullOrWhiteSpace(query.Status))
+        {
+            teachersQuery = query.Status.Trim().ToLowerInvariant() switch
+            {
+                "active" => teachersQuery.Where(user => user.IsActive),
+                "inactive" => teachersQuery.Where(user => !user.IsActive),
+                _ => teachersQuery
+            };
+        }
 
         var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
         var totalCount = await teachersQuery.CountAsync(cancellationToken);

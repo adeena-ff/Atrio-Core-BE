@@ -41,10 +41,18 @@ public class StudentService(IApplicationDbContext dbContext) : IStudentService
             studentsQuery = studentsQuery.Where(student => student.ClassId == query.ClassId.Value);
         }
 
-        var departmentCode = QueryFilter.DepartmentCode(query.Department);
-        if (departmentCode is not null)
+        if (!string.IsNullOrWhiteSpace(query.Status))
         {
-            studentsQuery = studentsQuery.Where(student => student.Class.Code.StartsWith(departmentCode + "-"));
+            studentsQuery = query.Status.Trim().ToLowerInvariant() switch
+            {
+                "active" => studentsQuery.Where(student => student.IsActive),
+                "inactive" => studentsQuery.Where(student => !student.IsActive),
+                "at-risk" => studentsQuery.Where(student =>
+                    student.AttendanceRecords.Any(record => record.Status != Domain.Enums.AttendanceStatus.Excused) &&
+                    student.AttendanceRecords.Count(record => record.Status == Domain.Enums.AttendanceStatus.Present || record.Status == Domain.Enums.AttendanceStatus.Late) * 100 <
+                    student.AttendanceRecords.Count(record => record.Status != Domain.Enums.AttendanceStatus.Excused) * 75),
+                _ => studentsQuery
+            };
         }
 
         var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);

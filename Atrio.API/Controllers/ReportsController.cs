@@ -18,7 +18,6 @@ public class ReportsController(IReportService reportService) : ControllerBase
         [FromQuery] int month,
         [FromQuery] Guid? classId,
         [FromQuery] string? search,
-        [FromQuery] string? department,
         CancellationToken cancellationToken,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10)
@@ -29,7 +28,6 @@ public class ReportsController(IReportService reportService) : ControllerBase
             Month = month == 0 ? DateTime.UtcNow.Month : month,
             ClassId = classId,
             Search = search,
-            Department = department,
             PageNumber = pageNumber,
             PageSize = pageSize,
             TeacherId = GetTeacherIdOrNull()

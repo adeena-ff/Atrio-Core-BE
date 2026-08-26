@@ -30,8 +30,21 @@ public class ClassService(IApplicationDbContext dbContext) : IClassService
                 (c.Teacher != null && (c.Teacher.FullName.ToLower().Contains(term) || c.Teacher.Email.ToLower().Contains(term))));
         }
 
-        var departmentCode = QueryFilter.DepartmentCode(query.Department);
-        if (departmentCode is not null) classesQuery = classesQuery.Where(c => c.Code.StartsWith(departmentCode + "-"));
+        if (!string.IsNullOrWhiteSpace(query.AcademicYear))
+        {
+            var academicYear = query.AcademicYear.Trim();
+            classesQuery = classesQuery.Where(c => c.AcademicYear == academicYear);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Status))
+        {
+            classesQuery = query.Status.Trim().ToLowerInvariant() switch
+            {
+                "active" => classesQuery.Where(c => c.IsActive),
+                "inactive" => classesQuery.Where(c => !c.IsActive),
+                _ => classesQuery
+            };
+        }
 
         var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
         var totalCount = await classesQuery.CountAsync(cancellationToken);

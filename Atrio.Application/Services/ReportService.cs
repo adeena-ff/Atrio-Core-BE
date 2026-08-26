@@ -46,12 +46,6 @@ public class ReportService(IApplicationDbContext dbContext) : IReportService
                 s.EnrollmentNumber.ToLower().Contains(term));
         }
 
-        var departmentCode = QueryFilter.DepartmentCode(query.Department);
-        if (departmentCode is not null)
-        {
-            studentsQuery = studentsQuery.Where(s => s.Class.Code.StartsWith(departmentCode + "-"));
-        }
-
         var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
         var totalCount = await studentsQuery.CountAsync(cancellationToken);
         var students = await studentsQuery

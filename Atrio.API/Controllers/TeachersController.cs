@@ -14,7 +14,7 @@ public class TeachersController(ITeacherService teacherService) : ControllerBase
     public async Task<ActionResult<Atrio.Application.Common.Models.PagedResponse<TeacherDto>>> GetAll(
         [FromQuery] string? search,
         [FromQuery] Guid? classId,
-        [FromQuery] string? department,
+        [FromQuery] string? status,
         CancellationToken cancellationToken,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10) =>
@@ -22,7 +22,7 @@ public class TeachersController(ITeacherService teacherService) : ControllerBase
         {
             Search = search,
             ClassId = classId,
-            Department = department,
+            Status = status,
             PageNumber = pageNumber,
             PageSize = pageSize
         }, cancellationToken));
