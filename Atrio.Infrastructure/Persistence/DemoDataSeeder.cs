@@ -7,16 +7,24 @@ namespace Atrio.Infrastructure.Persistence;
 
 /// <summary>
 /// Creates a deterministic, locally repeatable data set for Atrio demonstrations.
-/// The presence of the Sarah Jenkins account is the completion marker, so normal
-/// application restarts never duplicate or overwrite a completed demo seed.
+/// Normal application restarts preserve completed demo data. Setting
+/// DemoData__Reset=true triggers a transactional replacement of all related
+/// demo rows so stale foreign keys and legacy student identifiers cannot remain.
 /// </summary>
 public static class DemoDataSeeder
 {
     private const string DemoMarkerEmail = "sarah.jenkins@atrio.com";
 
-    public static async Task SeedAsync(ApplicationDbContext db, CancellationToken cancellationToken = default)
+    public static async Task<DemoSeedSummary> SeedAsync(
+        ApplicationDbContext db,
+        bool resetExistingData = false,
+        CancellationToken cancellationToken = default)
     {
-        if (await db.Users.AnyAsync(user => user.Email == DemoMarkerEmail, cancellationToken)) return;
+        var demoDataExists = await db.Users.AnyAsync(user => user.Email == DemoMarkerEmail, cancellationToken);
+        if (demoDataExists && !resetExistingData)
+        {
+            return await GetSummaryAsync(db, resetApplied: false, cancellationToken);
+        }
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         await db.AttendanceRecords.ExecuteDeleteAsync(cancellationToken);
@@ -37,7 +45,20 @@ public static class DemoDataSeeder
         db.AttendanceRecords.AddRange(attendance);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        return new DemoSeedSummary(users.Count, classes.Count, students.Count, attendance.Count, resetExistingData);
     }
+
+    private static async Task<DemoSeedSummary> GetSummaryAsync(
+        ApplicationDbContext db,
+        bool resetApplied,
+        CancellationToken cancellationToken) =>
+        new(
+            await db.Users.CountAsync(cancellationToken),
+            await db.Classes.CountAsync(cancellationToken),
+            await db.Students.CountAsync(cancellationToken),
+            await db.AttendanceRecords.CountAsync(cancellationToken),
+            resetApplied);
 
     private static List<User> CreateUsers(PasswordHasher<User> hasher)
     {
@@ -147,3 +168,10 @@ public static class DemoDataSeeder
         return days;
     }
 }
+
+public sealed record DemoSeedSummary(
+    int Users,
+    int Classes,
+    int Students,
+    int AttendanceRecords,
+    bool ResetApplied);
