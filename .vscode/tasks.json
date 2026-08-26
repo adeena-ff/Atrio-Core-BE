@@ -2,11 +2,132 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
-      "command": "dotnet",
+      "label": "restore packages",
       "type": "process",
-      "args": ["build", "${workspaceFolder}/Atrio.API/Atrio.API.csproj"],
+      "command": "dotnet",
+      "args": ["restore", "${workspaceFolder}/Atrio.slnx"],
       "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "restore dotnet tools",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["tool", "restore"],
+      "problemMatcher": []
+    },
+    {
+      "label": "clean",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["clean", "${workspaceFolder}/Atrio.slnx"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/Atrio.slnx", "--no-restore"],
+      "dependsOn": "restore packages",
+      "dependsOrder": "sequence",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "test",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["test", "${workspaceFolder}/Atrio.slnx", "--no-restore"],
+      "dependsOn": "restore packages",
+      "dependsOrder": "sequence",
+      "group": "test",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "ef migrations list",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["ef", "migrations", "list", "--project", "Atrio.Infrastructure", "--startup-project", "Atrio.API"],
+      "dependsOn": "restore dotnet tools",
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "ef database update",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["ef", "database", "update", "--project", "Atrio.Infrastructure", "--startup-project", "Atrio.API"],
+      "dependsOn": "restore dotnet tools",
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "run API",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["run", "--project", "Atrio.API"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "dotnet",
+        "pattern": [{ "regexp": ".", "file": 1, "location": 2, "message": 3 }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Building",
+          "endsPattern": "Now listening on:"
+        }
+      }
+    },
+    {
+      "label": "install frontend dependencies",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["ci"],
+      "options": {
+        "cwd": "${workspaceFolder}/../Atrio-React-FE"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build frontend",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}/../Atrio-React-FE"
+      },
+      "dependsOn": "install frontend dependencies",
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "run frontend",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "dev"],
+      "options": {
+        "cwd": "${workspaceFolder}/../Atrio-React-FE"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": [{ "regexp": ".", "file": 1, "location": 2, "message": 3 }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern": "Local:"
+        }
+      }
+    },
+    {
+      "label": "run full stack",
+      "dependsOrder": "parallel",
+      "dependsOn": ["run API", "run frontend"],
+      "problemMatcher": []
+    },
+    {
+      "label": "database setup",
+      "dependsOrder": "sequence",
+      "dependsOn": ["restore dotnet tools", "ef database update"],
+      "problemMatcher": []
     }
   ]
 }

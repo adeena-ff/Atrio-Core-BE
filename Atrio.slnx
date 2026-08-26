@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="Atrio.API/Atrio.API.csproj" />
+  <Project Path="Atrio.Application/Atrio.Application.csproj" />
+  <Project Path="Atrio.Domain/Atrio.Domain.csproj" />
+  <Project Path="Atrio.Infrastructure/Atrio.Infrastructure.csproj" />
 </Solution>
