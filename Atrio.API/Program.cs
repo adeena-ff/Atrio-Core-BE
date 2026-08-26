@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var dotEnvPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
 if (!File.Exists(dotEnvPath)) dotEnvPath = Path.Combine(Directory.GetCurrentDirectory(), "Atrio.API", ".env");
@@ -16,7 +17,8 @@ builder.Configuration.AddEnvironmentVariables();
 
 const string AllowFrontend = "AllowFrontend";
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -25,7 +27,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Atrio API",
         Version = "v1",
-        Description = "Student Attendance Management System — Zynthra Technologies"
+        Description = "Atrio - Student Attendance Management System"
     });
 });
 

@@ -46,4 +46,11 @@ public class StudentsController(IStudentService studentService) : ControllerBase
     {
         return Ok(await studentService.UpdateAsync(id, dto, cancellationToken));
     }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await studentService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

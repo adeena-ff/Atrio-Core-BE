@@ -1,6 +1,6 @@
 # Atrio Core Backend
 
-Clean Architecture ASP.NET Core API for Atrio (Zynthra Technologies).
+Clean Architecture ASP.NET Core API for Atrio - Student Attendance Management System.
 
 ## Projects
 
