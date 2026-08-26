@@ -65,7 +65,7 @@ public static class DemoDataSeeder
         var definitions = new[]
         {
             ("System Administrator", "admin@atrio.com", UserRole.Admin, "AdminPassword123!"),
-            ("Dr. Sarah Jenkins", "sarah.jenkins@atrio.com", UserRole.Teacher, "Password123!"),
+            ("Dr. Sarah Jenkins", "sarah.jenkins@atrio.com", UserRole.Teacher, "TeacherPassword123!"),
             ("Prof. Marcus Vance", "marcus.vance@atrio.com", UserRole.Teacher, "Password123!"),
             ("Elena Rostova", "elena.rostova@atrio.com", UserRole.Teacher, "Password123!"),
             ("David Chen", "david.chen@atrio.com", UserRole.Teacher, "Password123!"),
