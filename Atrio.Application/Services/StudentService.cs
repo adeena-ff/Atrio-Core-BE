@@ -95,6 +95,15 @@ public class StudentService(IApplicationDbContext dbContext) : IStudentService
         return (await GetByIdAsync(id, cancellationToken))!;
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var student = await dbContext.Students.FirstOrDefaultAsync(s => s.Id == id, cancellationToken)
+            ?? throw AppValidationException.Single(nameof(id), "Student was not found.");
+
+        student.IsActive = false;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<AttendanceHistoryDto> GetHistoryAsync(Guid studentId, CancellationToken cancellationToken = default)
     {
         var student = await dbContext.Students
