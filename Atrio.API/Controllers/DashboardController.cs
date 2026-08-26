@@ -1,6 +1,7 @@
 using Atrio.Application.Abstractions;
 using Atrio.Application.DTOs;
 using Atrio.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ namespace Atrio.API.Controllers;
 [Route("api/[controller]")]
 public class DashboardController(IApplicationDbContext db) : ControllerBase
 {
+    [Authorize(Roles = "Admin,Teacher")]
     [HttpGet]
     public async Task<ActionResult<DashboardDto>> Get(CancellationToken cancellationToken)
     {

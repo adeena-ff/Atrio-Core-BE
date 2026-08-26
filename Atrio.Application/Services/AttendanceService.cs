@@ -10,13 +10,14 @@ namespace Atrio.Application.Services;
 
 public class AttendanceService(IApplicationDbContext dbContext) : IAttendanceService
 {
-    public async Task<IReadOnlyList<AttendanceRecordDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AttendanceRecordDto>> GetAllAsync(Guid? teacherId = null, CancellationToken cancellationToken = default)
     {
-        var records = await dbContext.AttendanceRecords
+        var query = dbContext.AttendanceRecords
             .AsNoTracking()
             .Include(r => r.Student)
-            .OrderByDescending(r => r.AttendanceDate)
-            .ToListAsync(cancellationToken);
+            .AsQueryable();
+        if (teacherId.HasValue) query = query.Where(r => r.Class.TeacherId == teacherId.Value);
+        var records = await query.OrderByDescending(r => r.AttendanceDate).ToListAsync(cancellationToken);
 
         return records.Select(r => r.ToDto()).ToList();
     }
@@ -24,8 +25,11 @@ public class AttendanceService(IApplicationDbContext dbContext) : IAttendanceSer
     public async Task<IReadOnlyList<AttendanceRecordDto>> GetByClassAndDateAsync(
         Guid classId,
         DateOnly date,
+        Guid? teacherId = null,
         CancellationToken cancellationToken = default)
     {
+        if (teacherId.HasValue && !await dbContext.Classes.AnyAsync(c => c.Id == classId && c.TeacherId == teacherId.Value, cancellationToken))
+            return [];
         var students = await dbContext.Students
             .AsNoTracking()
             .Where(s => s.ClassId == classId && s.IsActive)

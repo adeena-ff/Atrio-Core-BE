@@ -18,6 +18,8 @@ public class Class
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public Guid? TeacherId { get; set; }
+    public User? Teacher { get; set; }
 
     public ICollection<Student> Students { get; set; } = [];
     public ICollection<AttendanceRecord> AttendanceRecords { get; set; } = [];

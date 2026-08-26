@@ -28,7 +28,7 @@ public class AuthController(IAuthService authService, IJwtTokenService jwtTokenS
     {
         var id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         if (!Guid.TryParse(id, out var userId)) return Unauthorized();
-        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+        var user = await db.Users.AsNoTracking().Include(x => x.AssignedClasses).FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
         return user is null ? Unauthorized() : Ok(user.ToDto());
     }
 }

@@ -20,6 +20,7 @@ public class AuthService(IApplicationDbContext dbContext) : IAuthService
 
         var user = await dbContext.Users
             .AsNoTracking()
+            .Include(u => u.AssignedClasses)
             .FirstOrDefaultAsync(u => u.Email == request.Email.Trim().ToLower() && u.IsActive, cancellationToken);
 
         if (user is null)
