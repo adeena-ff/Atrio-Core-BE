@@ -1,5 +1,7 @@
 using Atrio.Application.Abstractions;
 using Atrio.Application.Common;
+using Atrio.Application.Common.Models;
+using Atrio.Application.Common.Querying;
 using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Atrio.Application.Mapping;
@@ -11,13 +13,18 @@ namespace Atrio.Application.Services;
 
 public class StudentService(IApplicationDbContext dbContext) : IStudentService
 {
-    public async Task<IReadOnlyList<StudentDto>> SearchAsync(StudentSearchQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<StudentDto>> SearchAsync(StudentSearchQuery query, CancellationToken cancellationToken = default)
     {
         var studentsQuery = dbContext.Students
-            .AsNoTracking()
             .Include(student => student.Class)
             .Include(student => student.AttendanceRecords)
             .AsQueryable();
+
+        // Security scope is deliberately first so every subsequent filter and count is teacher-safe.
+        if (query.TeacherId.HasValue)
+        {
+            studentsQuery = studentsQuery.Where(student => student.Class.TeacherId == query.TeacherId.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -34,12 +41,29 @@ public class StudentService(IApplicationDbContext dbContext) : IStudentService
             studentsQuery = studentsQuery.Where(student => student.ClassId == query.ClassId.Value);
         }
 
+        var departmentCode = QueryFilter.DepartmentCode(query.Department);
+        if (departmentCode is not null)
+        {
+            studentsQuery = studentsQuery.Where(student => student.Class.Code.StartsWith(departmentCode + "-"));
+        }
+
+        var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
+        var totalCount = await studentsQuery.CountAsync(cancellationToken);
         var students = await studentsQuery
             .OrderBy(student => student.LastName)
             .ThenBy(student => student.FirstName)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return students.Select(student => student.ToDto(PercentageFor(student))).ToList();
+        return new PagedResponse<StudentDto>
+        {
+            Items = students.Select(student => student.ToDto(PercentageFor(student))).ToList(),
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<StudentDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

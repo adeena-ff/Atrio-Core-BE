@@ -1,4 +1,5 @@
 using Atrio.Application.Abstractions;
+using Atrio.Application.Common.Querying;
 using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Atrio.Domain.Enums;
@@ -20,18 +21,45 @@ public class ReportService(IApplicationDbContext dbContext) : IReportService
         var end = start.AddMonths(1).AddDays(-1);
 
         var studentsQuery = dbContext.Students
-            .AsNoTracking()
             .Include(s => s.Class)
             .Include(s => s.AttendanceRecords.Where(r => r.AttendanceDate >= start && r.AttendanceDate <= end))
             .Where(s => s.IsActive);
+
+        // Scope first: teachers can only aggregate their own assigned classes.
+        if (query.TeacherId.HasValue)
+        {
+            studentsQuery = studentsQuery.Where(s => s.Class.TeacherId == query.TeacherId.Value);
+        }
 
         if (query.ClassId.HasValue)
         {
             studentsQuery = studentsQuery.Where(s => s.ClassId == query.ClassId.Value);
         }
 
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var term = query.Search.Trim().ToLower();
+            studentsQuery = studentsQuery.Where(s =>
+                s.FirstName.ToLower().Contains(term) ||
+                s.LastName.ToLower().Contains(term) ||
+                s.Email.ToLower().Contains(term) ||
+                s.EnrollmentNumber.ToLower().Contains(term));
+        }
+
+        var departmentCode = QueryFilter.DepartmentCode(query.Department);
+        if (departmentCode is not null)
+        {
+            studentsQuery = studentsQuery.Where(s => s.Class.Code.StartsWith(departmentCode + "-"));
+        }
+
+        var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
+        var totalCount = await studentsQuery.CountAsync(cancellationToken);
         var students = await studentsQuery
             .OrderBy(s => s.LastName)
+            .ThenBy(s => s.FirstName)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         var rows = students.Select(student =>
@@ -65,7 +93,10 @@ public class ReportService(IApplicationDbContext dbContext) : IReportService
             Month = query.Month,
             ClassName = className,
             OverallPercentage = overall,
-            Students = rows
+            Students = rows,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount
         };
     }
 }

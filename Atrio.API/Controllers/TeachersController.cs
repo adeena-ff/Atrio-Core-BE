@@ -11,7 +11,21 @@ namespace Atrio.API.Controllers;
 public class TeachersController(ITeacherService teacherService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<TeacherDto>>> GetAll(CancellationToken cancellationToken) => Ok(await teacherService.GetAllAsync(cancellationToken));
+    public async Task<ActionResult<Atrio.Application.Common.Models.PagedResponse<TeacherDto>>> GetAll(
+        [FromQuery] string? search,
+        [FromQuery] Guid? classId,
+        [FromQuery] string? department,
+        CancellationToken cancellationToken,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10) =>
+        Ok(await teacherService.GetAllAsync(new TeacherSearchQuery
+        {
+            Search = search,
+            ClassId = classId,
+            Department = department,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        }, cancellationToken));
 
     [HttpPost]
     public async Task<ActionResult<TeacherDto>> Create([FromBody] CreateTeacherDto dto, CancellationToken cancellationToken)

@@ -2,6 +2,7 @@ using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Atrio.API.Controllers;
 
@@ -11,15 +12,22 @@ public class StudentsController(IStudentService studentService) : ControllerBase
 {
     [Authorize(Roles = "Admin,Teacher")]
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<StudentDto>>> Search(
+    public async Task<ActionResult<Atrio.Application.Common.Models.PagedResponse<StudentDto>>> Search(
         [FromQuery] string? search,
         [FromQuery] Guid? classId,
-        CancellationToken cancellationToken)
+        [FromQuery] string? department,
+        CancellationToken cancellationToken,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         return Ok(await studentService.SearchAsync(new StudentSearchQuery
         {
             Search = search,
-            ClassId = classId
+            ClassId = classId,
+            Department = department,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TeacherId = GetTeacherIdOrNull()
         }, cancellationToken));
     }
 
@@ -60,4 +68,9 @@ public class StudentsController(IStudentService studentService) : ControllerBase
         await studentService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
+
+    private Guid? GetTeacherIdOrNull() =>
+        User.IsInRole("Teacher") && Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var userId)
+            ? userId
+            : null;
 }

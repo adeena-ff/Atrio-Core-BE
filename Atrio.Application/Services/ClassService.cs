@@ -1,5 +1,7 @@
 using Atrio.Application.Abstractions;
 using Atrio.Application.Common;
+using Atrio.Application.Common.Models;
+using Atrio.Application.Common.Querying;
 using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Atrio.Application.Mapping;
@@ -10,16 +12,38 @@ namespace Atrio.Application.Services;
 
 public class ClassService(IApplicationDbContext dbContext) : IClassService
 {
-    public async Task<IReadOnlyList<ClassDto>> GetAllAsync(Guid? teacherId = null, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<ClassDto>> GetAllAsync(ClassSearchQuery query, CancellationToken cancellationToken = default)
     {
-        var query = dbContext.Classes
-            .AsNoTracking()
+        var classesQuery = dbContext.Classes
             .Include(c => c.Students)
+            .Include(c => c.Teacher)
             .AsQueryable();
-        if (teacherId.HasValue) query = query.Where(c => c.TeacherId == teacherId.Value);
-        var classes = await query.OrderBy(c => c.Name).ToListAsync(cancellationToken);
+        if (query.TeacherId.HasValue) classesQuery = classesQuery.Where(c => c.TeacherId == query.TeacherId.Value);
+        if (query.ClassId.HasValue) classesQuery = classesQuery.Where(c => c.Id == query.ClassId.Value);
 
-        return classes.Select(c => c.ToDto(c.Students.Count(s => s.IsActive))).ToList();
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var term = query.Search.Trim().ToLower();
+            classesQuery = classesQuery.Where(c =>
+                c.Name.ToLower().Contains(term) ||
+                c.Code.ToLower().Contains(term) ||
+                (c.Teacher != null && (c.Teacher.FullName.ToLower().Contains(term) || c.Teacher.Email.ToLower().Contains(term))));
+        }
+
+        var departmentCode = QueryFilter.DepartmentCode(query.Department);
+        if (departmentCode is not null) classesQuery = classesQuery.Where(c => c.Code.StartsWith(departmentCode + "-"));
+
+        var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
+        var totalCount = await classesQuery.CountAsync(cancellationToken);
+        var classes = await classesQuery.OrderBy(c => c.Name).Skip((pageNumber - 1) * pageSize).Take(pageSize).AsNoTracking().ToListAsync(cancellationToken);
+
+        return new PagedResponse<ClassDto>
+        {
+            Items = classes.Select(c => c.ToDto(c.Students.Count(s => s.IsActive))).ToList(),
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<ClassDto> CreateAsync(CreateClassDto dto, CancellationToken cancellationToken = default)

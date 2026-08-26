@@ -2,6 +2,7 @@ using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Atrio.API.Controllers;
 
@@ -16,13 +17,27 @@ public class ReportsController(IReportService reportService) : ControllerBase
         [FromQuery] int year,
         [FromQuery] int month,
         [FromQuery] Guid? classId,
-        CancellationToken cancellationToken)
+        [FromQuery] string? search,
+        [FromQuery] string? department,
+        CancellationToken cancellationToken,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         return Ok(await reportService.GetMonthlyAsync(new MonthlyReportQuery
         {
             Year = year == 0 ? DateTime.UtcNow.Year : year,
             Month = month == 0 ? DateTime.UtcNow.Month : month,
-            ClassId = classId
+            ClassId = classId,
+            Search = search,
+            Department = department,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TeacherId = GetTeacherIdOrNull()
         }, cancellationToken));
     }
+
+    private Guid? GetTeacherIdOrNull() =>
+        User.IsInRole("Teacher") && Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var userId)
+            ? userId
+            : null;
 }

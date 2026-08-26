@@ -1,5 +1,7 @@
 using Atrio.Application.Abstractions;
 using Atrio.Application.Common;
+using Atrio.Application.Common.Models;
+using Atrio.Application.Common.Querying;
 using Atrio.Application.DTOs;
 using Atrio.Application.Interfaces;
 using Atrio.Domain.Entities;
@@ -11,11 +13,34 @@ namespace Atrio.Application.Services;
 
 public class TeacherService(IApplicationDbContext dbContext) : ITeacherService
 {
-    public async Task<IReadOnlyList<TeacherDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<TeacherDto>> GetAllAsync(TeacherSearchQuery query, CancellationToken cancellationToken = default)
     {
-        var teachers = await dbContext.Users.AsNoTracking().Include(user => user.AssignedClasses)
-            .Where(user => user.Role == UserRole.Teacher).OrderBy(user => user.FullName).ToListAsync(cancellationToken);
-        return teachers.Select(ToDto).ToList();
+        var teachersQuery = dbContext.Users
+            .Include(user => user.AssignedClasses)
+            .Where(user => user.Role == UserRole.Teacher);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var term = query.Search.Trim().ToLower();
+            teachersQuery = teachersQuery.Where(user => user.FullName.ToLower().Contains(term) || user.Email.ToLower().Contains(term));
+        }
+
+        if (query.ClassId.HasValue) teachersQuery = teachersQuery.Where(user => user.AssignedClasses.Any(c => c.Id == query.ClassId.Value));
+
+        var departmentCode = QueryFilter.DepartmentCode(query.Department);
+        if (departmentCode is not null) teachersQuery = teachersQuery.Where(user => user.AssignedClasses.Any(c => c.Code.StartsWith(departmentCode + "-")));
+
+        var (pageNumber, pageSize) = QueryFilter.NormalizePage(query.PageNumber, query.PageSize);
+        var totalCount = await teachersQuery.CountAsync(cancellationToken);
+        var teachers = await teachersQuery.OrderBy(user => user.FullName).Skip((pageNumber - 1) * pageSize).Take(pageSize).AsNoTracking().ToListAsync(cancellationToken);
+
+        return new PagedResponse<TeacherDto>
+        {
+            Items = teachers.Select(ToDto).ToList(),
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<TeacherDto> CreateAsync(CreateTeacherDto dto, CancellationToken cancellationToken = default)

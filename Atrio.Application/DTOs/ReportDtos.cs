@@ -1,3 +1,5 @@
+using Atrio.Application.Common.Models;
+
 namespace Atrio.Application.DTOs;
 
 public class MonthlyReportQuery
@@ -5,15 +7,25 @@ public class MonthlyReportQuery
     public int Year { get; set; } = DateTime.UtcNow.Year;
     public int Month { get; set; } = DateTime.UtcNow.Month;
     public Guid? ClassId { get; set; }
+    public string? Search { get; set; }
+    public string? Department { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public Guid? TeacherId { get; set; }
 }
 
-public class MonthlyReportDto
+public class MonthlyReportDto : PagedResponse<StudentMonthlyRowDto>
 {
     public int Year { get; set; }
     public int Month { get; set; }
     public string? ClassName { get; set; }
     public decimal OverallPercentage { get; set; }
-    public IReadOnlyList<StudentMonthlyRowDto> Students { get; set; } = [];
+    // Kept for existing report consumers; Items is the canonical paginated collection.
+    public List<StudentMonthlyRowDto> Students
+    {
+        get => Items;
+        set => Items = value;
+    }
 }
 
 public class StudentMonthlyRowDto

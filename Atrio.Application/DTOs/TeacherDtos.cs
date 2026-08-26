@@ -26,3 +26,12 @@ public class UpdateTeacherDto
     public IReadOnlyList<Guid> AssignedClassIds { get; set; } = [];
     public bool IsActive { get; set; } = true;
 }
+
+public class TeacherSearchQuery
+{
+    public string? Search { get; set; }
+    public Guid? ClassId { get; set; }
+    public string? Department { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+}

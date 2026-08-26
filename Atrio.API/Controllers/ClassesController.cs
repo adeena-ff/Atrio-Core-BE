@@ -12,9 +12,23 @@ public class ClassesController(IClassService classService) : ControllerBase
 {
     [Authorize(Roles = "Admin,Teacher")]
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<ClassDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<Atrio.Application.Common.Models.PagedResponse<ClassDto>>> GetAll(
+        [FromQuery] string? search,
+        [FromQuery] Guid? classId,
+        [FromQuery] string? department,
+        CancellationToken cancellationToken,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(await classService.GetAllAsync(GetTeacherIdOrNull(), cancellationToken));
+        return Ok(await classService.GetAllAsync(new ClassSearchQuery
+        {
+            Search = search,
+            ClassId = classId,
+            Department = department,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TeacherId = GetTeacherIdOrNull()
+        }, cancellationToken));
     }
 
     [Authorize(Roles = "Admin")]
